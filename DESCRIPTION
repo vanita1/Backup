@@ -1,9 +1,11 @@
 Package: Great
 Type: Package
-Title: What the package does (short line)
+Title: Week4 assignment packages
 Version: 1.0
-Date: 2017-07-07
-Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
-License: What license is it under?
+Date: 2017-07-05
+Depends:  R (>= 3.0.0)
+Imports: readr, dplyr,magrittr,maps,tidyr
+Author: Vanita<Vanita.garg@gmail.com>
+Maintainer: Vanita<Vanita.garg@gmail.com>
+Description: Functions for analysis of fatal incidents
+License: GPL (>= 2)

@@ -1,3 +1,7 @@
+---
+title: "Packfarsvanita"
+output: html_document
+---
 #'@note
 #'fars_functions : Package for reading, summarising and create visual representation
 #'for data from the Fatality Analysis Reporting System (FARS). 
@@ -15,108 +19,123 @@
 #'@return - Tibble object with csv file data
 #'@export
 #'
+
+```{r}
+filename = "accident_2013.csv.bz2"
 fars_read <- function(filename) {
-  if(!file.exists(filename))
-    stop("file '", filename, "' does not exist")
-  data <- suppressMessages({
-    readr::read_csv(filename, progress = FALSE)
-  })
-  dplyr::tbl_df(data)
+        if(!file.exists(filename))
+                stop("file '", filename, "' does not exist")
+        data <- suppressMessages({
+                readr::read_csv(filename, progress = FALSE)
+        })
+        dplyr::tbl_df(data)
 }  
+```
+
 #'@note make_filename function creates a custom file name based on year argument value
 #'@examples - make_filename(2015)
 #'@parameter - year- Numeric e.g. 2015
 #'@return - character string having custom file name e.g.accident_2015.csv.bz2
 #'@export
 #'
+
+```{r}
 make_filename <- function(year) {
-  year <- as.integer(year)
-  sprintf("accident_%d.csv.bz2", year)
+        year <- as.integer(year)
+        sprintf("accident_%d.csv.bz2", year)
 }
-#'@note -fars_read_years function to iteratively read the files based on numeric year 
-#'vector 
-#'@examples - fars_read_years(c(2015,1980,2010))
-#'mportFrom select dplyr
-#'@importFrom mutate dplyr
-#'@importFrom %/% magrittr
-#'@parameter - a numeric vector contains years e.g. c(2015,2001,1980)
-#'@return - a list of tibbles each containing year and month columns. If files does not exist, returns NULL
-#'@export
+expect_that(make_filename(2013) , equals("accident_2013.csv.bz2"))
+```
 
+ #'@note -fars_read_years function to iteratively read the files based on numeric year 
+ #'vector 
+ #'@examples - fars_read_years(c(2015,1980,2010))
+ #'mportFrom select dplyr
+ #'@importFrom mutate dplyr
+ #'@importFrom %/% magrittr
+ #'@parameter - a numeric vector contains years e.g. c(2015,2001,1980)
+ #'@return - a list of tibbles each containing year and month columns. If files does not exist, returns NULL
+ #'@export
+
+```{r}
 fars_read_years <- function(years) {
-  lapply(years, function(year) {
-    file <- make_filename(year)
-    tryCatch({
-      dat <- fars_read(file)
-      dplyr::mutate(dat, year = year) %>% 
-        dplyr::select(MONTH, year)
-    }, error = function(e) {
-      warning("invalid year: ", year)
-      return(NULL)
-    })
-  })
+        lapply(years, function(year) {
+                file <- make_filename(year)
+                tryCatch({
+                        dat <- fars_read(file)
+                        dplyr::mutate(dat, year = year) %>% 
+                                dplyr::select(MONTH, year)
+                }, error = function(e) {
+                        warning("invalid year: ", year)
+                        return(NULL)
+                })
+        })
 }
 
+```
 
-#'@note -fars_summarize_years combines multiple year files by rows and then group on year and month
-#' Further it calculates summary of the resulting data frame and spreads across year
+ #'@note -fars_summarize_years combines multiple year files by rows and then group on year and month
+ #' Further it calculates summary of the resulting data frame and spreads across year
 
-#'@parameter - a numeric vector contains years e.g. c(2015,2001,1980)
+ #'@parameter - a numeric vector contains years e.g. c(2015,2001,1980)
 
-#'@return A wide format tibble. One column for year and a MONTH column. Each
-#' value is the count of observations in a year-month.
+ #'@return A wide format tibble. One column for year and a MONTH column. Each
+  #' value is the count of observations in a year-month.
 
-#'@examples - fars_read("accident_2015.csv.bz2")
+ #'@examples - fars_read("accident_2015.csv.bz2")
 
-#'@importFrom dplyr bind_rows
-#'@importFrom dplyr group_by
-#'@importFrom dplyr summarize
-#'@importFrom tidyr spread
-#'@export
+ #'@importFrom dplyr bind_rows
+ #'@importFrom dplyr group_by
+ #'@importFrom dplyr summarize
+ #'@importFrom tidyr spread
+ #'@export
 
-
+```{r}
 fars_summarize_years <- function(years) {
-  dat_list <- fars_read_years(years)
-  dplyr::bind_rows(dat_list) %>% 
-    dplyr::group_by(year, MONTH) %>% 
-    dplyr::summarize(n = n()) %>%
-    tidyr::spread(year, n)
+        dat_list <- fars_read_years(years)
+        dplyr::bind_rows(dat_list) %>% 
+                dplyr::group_by(year, MONTH) %>% 
+                dplyr::summarize(n = n()) %>%
+                tidyr::spread(year, n)
 }
+```
 
 
 
-#'@note -fars_map_state- draw a map for a given year and state 
-#'@details  #’  Function to check if there is data for a state in a particular year file. If data
-#'is present and plot longitude against latitude for observations where 
-#' longitude is > 900 and latitude is >90
-#' Add Points to a Plot
-#'@parameter-a vector containing statenumber and year or state and year e.g. fars_map_state(20,2015)
+ #'@note -fars_map_state- draw a map for a given year and state 
+ #'@details  #’  Function to check if there is data for a state in a particular year file. If data
+ #'is present and plot longitude against latitude for observations where 
+ #' longitude is > 900 and latitude is >90
+ #' Add Points to a Plot
+ #'@parameter-a vector containing statenumber and year or state and year e.g. fars_map_state(20,2015)
 
-#'@return NULL
+ #'@return NULL
+ 
+ #'@importFrom maps map
+ #'@importFrom graphics points
 
-#'@importFrom maps map
-#'@importFrom graphics points
+ #'@export
+ #'@examples   fars_map_state(20,2015)
 
-#'@export
-#'@examples   fars_map_state(20,2015)
-
+```{r}
 fars_map_state <- function(state.num, year) {
-  filename <- make_filename(year)
-  data <- fars_read(filename)
-  state.num <- as.integer(state.num)
-  
-  if(!(state.num %in% unique(data$STATE)))
-    stop("invalid STATE number: ", state.num)
-  data.sub <- dplyr::filter(data, STATE == state.num)
-  if(nrow(data.sub) == 0L) {
-    message("no accidents to plot")
-    return(invisible(NULL))
-  }
-  is.na(data.sub$LONGITUD) <- data.sub$LONGITUD > 900
-  is.na(data.sub$LATITUDE) <- data.sub$LATITUDE > 90
-  with(data.sub, {
-    maps::map("state", ylim = range(LATITUDE, na.rm = TRUE),
-              xlim = range(LONGITUD, na.rm = TRUE))
-    graphics::points(LONGITUD, LATITUDE, pch = 46)
-  })
+        filename <- make_filename(year)
+        data <- fars_read(filename)
+        state.num <- as.integer(state.num)
+
+        if(!(state.num %in% unique(data$STATE)))
+                stop("invalid STATE number: ", state.num)
+        data.sub <- dplyr::filter(data, STATE == state.num)
+        if(nrow(data.sub) == 0L) {
+                message("no accidents to plot")
+                return(invisible(NULL))
+        }
+        is.na(data.sub$LONGITUD) <- data.sub$LONGITUD > 900
+        is.na(data.sub$LATITUDE) <- data.sub$LATITUDE > 90
+        with(data.sub, {
+                maps::map("state", ylim = range(LATITUDE, na.rm = TRUE),
+                          xlim = range(LONGITUD, na.rm = TRUE))
+                graphics::points(LONGITUD, LATITUDE, pch = 46)
+        })
 }
+```
